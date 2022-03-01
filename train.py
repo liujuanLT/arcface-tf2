@@ -1,32 +1,23 @@
-from absl import app, flags, logging
-from absl.flags import FLAGS
 import os
+import sys
 import tensorflow as tf
+import argparse
 
 from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
-
+sys.path.append(os.path.dirname(__file__))
 from modules.models import ArcFaceModel
 from modules.losses import SoftmaxLoss
 from modules.utils import set_memory_growth, load_yaml, get_ckpt_inf
 import modules.dataset as dataset
 
-
-flags.DEFINE_string('cfg_path', './configs/arc_res50.yaml', 'config file path')
-flags.DEFINE_string('gpu', '0', 'which gpu to use')
-flags.DEFINE_enum('mode', 'fit', ['fit', 'eager_tf'],
-                  'fit: model.fit, eager_tf: custom GradientTape')
-
-
-def main(_):
+def main(cfg):
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    os.environ['CUDA_VISIBLE_DEVICES'] = FLAGS.gpu
+    os.environ['CUDA_VISIBLE_DEVICES'] = cfg['gpu']
 
     logger = tf.get_logger()
     logger.disabled = True
-    logger.setLevel(logging.FATAL)
+    logger.setLevel('FATAL')
     set_memory_growth()
-
-    cfg = load_yaml(FLAGS.cfg_path)
 
     model = ArcFaceModel(size=cfg['input_size'],
                          backbone_type=cfg['backbone_type'],
@@ -34,18 +25,19 @@ def main(_):
                          head_type=cfg['head_type'],
                          embd_shape=cfg['embd_shape'],
                          w_decay=cfg['w_decay'],
+                         use_pretrain=cfg['use_pretrain'],
                          training=True)
     model.summary(line_length=80)
 
     if cfg['train_dataset']:
-        logging.info("load ms1m dataset.")
+        print("load ms1m dataset.")
         dataset_len = cfg['num_samples']
         steps_per_epoch = dataset_len // cfg['batch_size']
         train_dataset = dataset.load_tfrecord_dataset(
             cfg['train_dataset'], cfg['batch_size'], cfg['binary_img'],
             is_ccrop=cfg['is_ccrop'])
     else:
-        logging.info("load fake dataset.")
+        print("load fake dataset.")
         steps_per_epoch = 1
         train_dataset = dataset.load_fake_dataset(cfg['input_size'])
 
@@ -63,7 +55,7 @@ def main(_):
         print("[*] training from scratch.")
         epochs, steps = 1, 1
 
-    if FLAGS.mode == 'eager_tf':
+    if cfg['mode'] == 'eager_tf':
         # Eager mode is great for debugging
         # Non eager graph mode is recommended for real training
         summary_writer = tf.summary.create_file_writer(
@@ -83,7 +75,8 @@ def main(_):
             grads = tape.gradient(total_loss, model.trainable_variables)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-            if steps % 5 == 0:
+            #if steps % 5 == 0:
+            if True:
                 verb_str = "Epoch {}/{}: {}/{}, loss={:.2f}, lr={:.4f}"
                 print(verb_str.format(epochs, cfg['epochs'],
                                       steps % steps_per_epoch,
@@ -130,6 +123,24 @@ def main(_):
 
     print("[*] training done!")
 
+def parse_args(argv):
+    parsor = argparse.ArgumentParser()
+    parsor.add_argument('--cfg_path', type=str,
+        help='config file path', default='./configs/arc_res50.yaml')
+    parsor.add_argument('--gpu', type=str,
+        help='which gpu to use', default='0')
+    parsor.add_argument('--mode', type=str,
+        help='fit: model.fit, eager_tf: custom GradientTape', default='fit')
+
+    args = parsor.parse_args(argv)
+    cfg = load_yaml(args.cfg_path)
+    d = args.__dict__
+    args_dict = {key: d[key] for key in d if key[0]!='_'}
+    for k in args_dict:
+        # if k in cfg:
+        if True:
+            cfg[k] = args_dict[k]
+    return cfg
 
 if __name__ == '__main__':
-    app.run(main)
+    main(parse_args(sys.argv[1:]))
