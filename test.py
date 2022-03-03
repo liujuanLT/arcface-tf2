@@ -50,24 +50,27 @@ def main(cfg):
 
         if lfw:
             print("[*] Perform Evaluation on LFW...")
-            acc_lfw, best_th = perform_val(
+            acc, best_th, acc_std, val, val_std, far = None, None, None, None, None, None
+            acc, best_th, acc_std, val, val_std, far = perform_val(
                 cfg['embd_shape'], cfg['batch_size'], model, lfw, lfw_issame,
                 is_ccrop=cfg['is_ccrop'])
-            print("    acc {:.4f}, th: {:.2f}".format(acc_lfw, best_th))
+            print("acc: {:.5f}+={:.5f} @ th: {:.5f} || val rate: {:.5f}+={:.5f} @ FAR: {:.5f}".format(acc, acc_std, best_th, val, val_std, far))
 
         if agedb_30:
             print("[*] Perform Evaluation on AgeDB30...")
-            acc_agedb30, best_th = perform_val(
+            acc, best_th, acc_std, val, val_std, far = None, None, None, None, None, None
+            acc, best_th, acc_std, val, val_std, far = perform_val(
                 cfg['embd_shape'], cfg['batch_size'], model, agedb_30,
                 agedb_30_issame, is_ccrop=cfg['is_ccrop'])
-            print("    acc {:.4f}, th: {:.2f}".format(acc_agedb30, best_th))
+            print("acc: {:.5f}+={:.5f} @ th: {:.5f} || val rate: {:.5f}+={:.5f} @ FAR: {:.5f}".format(acc, acc_std, best_th, val, val_std, far))
 
         if cfp_fp:
             print("[*] Perform Evaluation on CFP-FP...")
-            acc_cfp_fp, best_th = perform_val(
+            acc, best_th, acc_std, val, val_std, far = None, None, None, None, None, None
+            acc, best_th, acc_std, val, val_std, far = perform_val(
                 cfg['embd_shape'], cfg['batch_size'], model, cfp_fp, cfp_fp_issame,
                 is_ccrop=cfg['is_ccrop'])
-            print("    acc {:.4f}, th: {:.2f}".format(acc_cfp_fp, best_th))
+            print("acc: {:.5f}+={:.5f} @ th: {:.5f} || val rate: {:.5f}+={:.5f} @ FAR: {:.5f}".format(acc, acc_std, best_th, val, val_std, far))
 
 def parse_args(argv):
     parsor = argparse.ArgumentParser()
