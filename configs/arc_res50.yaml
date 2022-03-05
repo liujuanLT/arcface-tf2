@@ -22,8 +22,7 @@ train_dataset: '/home/jliu/codes/data/datasets/casia_webface/CASIA-WebFace-112X9
 binary_img: True
 num_classes: 10576
 num_samples: 490871
-epochs: 5
-base_lr: 0.01
+base_lr: 0.001
 w_decay: !!float 5e-4
 save_steps: 1000
 use_pretrain: False

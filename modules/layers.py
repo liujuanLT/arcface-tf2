@@ -12,6 +12,9 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
 
+def safe_norm(x, epsilon=1e-12, axis=None, keep_dims=False):   
+    return tf.sqrt(tf.reduce_sum(x ** 2, axis=axis, keepdims=keep_dims) + epsilon)
+
 
 class ArcMarginPenaltyLogists(tf.keras.layers.Layer):
     """ArcMarginPenaltyLogists"""
@@ -30,8 +33,12 @@ class ArcMarginPenaltyLogists(tf.keras.layers.Layer):
         self.mm = tf.multiply(self.sin_m, self.margin, name='mm')
 
     def call(self, embds, labels):
-        normed_embds = tf.nn.l2_normalize(embds, axis=1, name='normed_embd')
-        normed_w = tf.nn.l2_normalize(self.w, axis=0, name='normed_weights')
+        # normed_embds = tf.nn.l2_normalize(embds, axis=1, name='normed_embd')
+        # normed_w = tf.nn.l2_normalize(self.w, axis=0, name='normed_weights')
+        embedding_norm = safe_norm(embds, axis=1, keep_dims=True)
+        normed_embds = tf.divide(embds, embedding_norm, name='normed_embd')
+        weights_norm = safe_norm(self.w, axis=0, keep_dims=True)
+        normed_w = tf.divide(self.w, weights_norm, name='normed_weights')
 
         cos_t = tf.matmul(normed_embds, normed_w, name='cos_t')
         sin_t = tf.sqrt(1. - cos_t ** 2, name='sin_t')
